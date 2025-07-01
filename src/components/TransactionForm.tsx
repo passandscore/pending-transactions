@@ -37,6 +37,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
   const [pendingTx, setPendingTx] = useState<PendingTransaction | null>(null);
   const [isFetchingPendingTx, setIsFetchingPendingTx] = useState(false);
   const [hasManualNonce, setHasManualNonce] = useState(false);
+  const [walletNonce, setWalletNonce] = useState<number | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -99,24 +100,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         }
       } catch (poolError: any) {
         console.log('txpool_content not supported, trying alternative approach:', poolError.message);
-        
-        // Fallback: Try to get the transaction by nonce using eth_getTransactionByHash
-        // This won't find pending transactions but will help with confirmed ones
-        try {
-          const currentNonce = await provider.getTransactionCount(walletAddress, 'latest');
-          if (nonce < currentNonce) {
-            // Nonce is in the past, transaction might be confirmed
-            console.log('Nonce is in the past, transaction may be confirmed');
-          } else if (nonce === currentNonce) {
-            // This is the current nonce, no pending transaction found
-            console.log('Current nonce matches, no pending transaction found');
-          } else {
-            // Nonce is in the future, which is unusual
-            console.log('Nonce is in the future, this is unusual');
-          }
-        } catch (nonceError) {
-          console.log('Could not verify nonce status:', nonceError);
-        }
       }
       
       // If we get here, no pending transaction was found
@@ -130,6 +113,31 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
     }
   };
 
+  // Get nonce from MetaMask or RPC
+  const getNonce = async (): Promise<number> => {
+    if (window.ethereum) {
+      try {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await metamaskProvider.getSigner();
+          const nonce = await signer.getNonce();
+          setWalletNonce(nonce);
+          return nonce;
+        }
+      } catch (metamaskError) {
+        console.log('MetaMask not available, using RPC nonce:', metamaskError);
+      }
+    }
+    
+    // Fallback to RPC provider
+    const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
+    const nonce = await provider.getTransactionCount(walletAddress, 'pending');
+    setWalletNonce(nonce);
+    return nonce;
+  };
+
   // Auto-fetch nonce when RPC URL changes
   useEffect(() => {
     const fetchNonceAndGas = async () => {
@@ -138,34 +146,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         try {
           const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
           
-          // Get nonce from MetaMask if available, otherwise from RPC
-          let nonce: number;
-          if (window.ethereum) {
-            try {
-              // Request account access first
-              await window.ethereum.request({ method: 'eth_requestAccounts' });
-              // Get nonce from MetaMask
-              const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-              if (accounts && accounts.length > 0) {
-                const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await metamaskProvider.getSigner();
-                nonce = await signer.getNonce();
-                console.log('MetaMask nonce:', nonce);
-              } else {
-                // Fallback to RPC provider
-                nonce = await provider.getTransactionCount(walletAddress, 'pending');
-                console.log('RPC nonce:', nonce);
-              }
-            } catch (metamaskError) {
-              console.log('MetaMask not available, using RPC nonce:', metamaskError);
-              nonce = await provider.getTransactionCount(walletAddress, 'pending');
-              console.log('RPC nonce:', nonce);
-            }
-          } else {
-            // No MetaMask, use RPC provider
-            nonce = await provider.getTransactionCount(walletAddress, 'pending');
-            console.log('RPC nonce:', nonce);
-          }
+          // Get nonce
+          const nonce = await getNonce();
           
           // Only update nonce if the user hasn't manually entered one
           if (!hasManualNonce) {
@@ -257,45 +239,45 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         throw new Error('Invalid Ethereum address from MetaMask');
       }
 
-      // Use ethers.js with MetaMask provider but override nonce
+      // Use ethers.js with MetaMask provider
       const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
       const signer = await metamaskProvider.getSigner();
       
-      // First, let's see what nonce MetaMask expects
-      const expectedNonce = await signer.getNonce();
-      console.log('MetaMask expected nonce:', expectedNonce);
-      console.log('Our desired nonce:', parseInt(formData.nonce));
+      // Get network info for block explorer URL
+      const network = await metamaskProvider.getNetwork();
+      const blockExplorerUrl = (network as any).getBlockExplorerUrl?.() || null;
       
       // Create transaction object
       const customTx = {
         to: fromAddress,
         value: ethers.parseEther(formData.value),
-        nonce: parseInt(formData.nonce), // Force our nonce
+        nonce: parseInt(formData.nonce),
         gasPrice: ethers.parseUnits(formData.gasPrice, 'gwei'),
         gasLimit: parseInt(formData.gasLimit)
       };
 
       console.log('Custom transaction object:', customTx);
 
-      // Try to populate the transaction to see if MetaMask accepts our nonce
+      // Populate the transaction
       const populatedTx = await signer.populateTransaction(customTx);
       console.log('Populated transaction:', populatedTx);
       
       // Send transaction with explicit nonce
       const transaction = await signer.sendTransaction(populatedTx);
       
-      setSuccess(`Transaction sent with nonce ${formData.nonce}! Hash: ${transaction.hash}`);
+      const explorerLink = blockExplorerUrl ? `${blockExplorerUrl}/tx/${transaction.hash}` : transaction.hash;
+      setSuccess(`Transaction sent with nonce ${formData.nonce}!<br>Hash: ${explorerLink}`);
       
       // Wait for confirmation
-      const receipt = await transaction.wait();
-      setSuccess(`Transaction confirmed with nonce ${formData.nonce}! Hash: ${transaction.hash}`);
+      await transaction.wait();
+      setSuccess(`Transaction confirmed with nonce ${formData.nonce}!<br>Hash: ${explorerLink}`);
       
     } catch (err: any) {
       console.error('Failed to send transaction:', err);
       
       // Check if user rejected the transaction
       if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
-        setError('Transaction was rejected by user. The nonce shown in MetaMask may be incorrect - the actual transaction will use nonce ' + formData.nonce);
+        setError('Transaction was rejected by user');
       } else {
         setError(err.message || 'Failed to send transaction');
       }
@@ -306,38 +288,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
 
   const getCurrentNonce = async () => {
     try {
-      // Get nonce from MetaMask if available, otherwise from RPC
-      let nonce: number;
-      if (window.ethereum) {
-        try {
-          // Request account access first
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          // Get nonce from MetaMask
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await metamaskProvider.getSigner();
-            nonce = await signer.getNonce();
-            console.log('MetaMask nonce (manual):', nonce);
-          } else {
-            // Fallback to RPC provider
-            const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
-            nonce = await provider.getTransactionCount(walletAddress, 'pending');
-            console.log('RPC nonce (manual):', nonce);
-          }
-        } catch (metamaskError) {
-          console.log('MetaMask not available, using RPC nonce (manual):', metamaskError);
-          const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
-          nonce = await provider.getTransactionCount(walletAddress, 'pending');
-          console.log('RPC nonce (manual):', nonce);
-        }
-      } else {
-        // No MetaMask, use RPC provider
-        const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
-        nonce = await provider.getTransactionCount(walletAddress, 'pending');
-        console.log('RPC nonce (manual):', nonce);
-      }
-      
+      const nonce = await getNonce();
       setFormData(prev => ({ ...prev, nonce: nonce.toString() }));
       setHasManualNonce(false); // Reset manual flag when user explicitly gets nonce
     } catch (err: any) {
@@ -362,6 +313,24 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         </div>
         <h2 className="text-2xl font-bold text-white">Transaction Settings</h2>
       </div>
+
+      {/* Nonce Warning */}
+      {walletNonce !== null && parseInt(formData.nonce) !== walletNonce && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+        >
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-5 h-5 text-yellow-400" />
+            <h3 className="text-yellow-300 font-medium">Nonce Mismatch Notice</h3>
+          </div>
+          <p className="text-yellow-200/80 text-sm">
+            Your wallet UI may show nonce {walletNonce}, but this transaction will execute with nonce {formData.nonce}. 
+            This is normal when replacing pending transactions - the transaction will use the nonce you specify here.
+          </p>
+        </motion.div>
+      )}
 
       {/* Pending Transaction Details */}
       {pendingTx && (
@@ -458,7 +427,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
             </button>
           </div>
           <p className="text-white/60 text-xs mt-1">
-            Current nonce: {formData.nonce || 'Not set'} • {pendingTx ? 'Pending TX found!' : 'No pending TX found'}
+            {walletNonce !== null && `Wallet shows: ${walletNonce} • `}
+            {pendingTx ? 'Pending TX found!' : 'No pending TX found'}
           </p>
         </div>
 
@@ -567,7 +537,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
           className="flex items-center space-x-2 bg-green-500/20 border border-green-500/30 rounded-lg p-3 mt-6"
         >
           <CheckCircle className="w-5 h-5 text-green-400" />
-          <span className="text-green-300 text-sm">{success}</span>
+          <span className="text-green-300 text-sm">{success.split('\n').map((line, index) => (
+            <span key={index}>{line}<br /></span>
+          ))}</span>
         </motion.div>
       )}
 
