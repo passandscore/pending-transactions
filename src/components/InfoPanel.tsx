@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, Info, AlertTriangle, Zap, Shield } from 'lucide-react';
+import { X, AlertTriangle, Zap, Shield, Skull, Eye } from 'lucide-react';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -12,26 +12,26 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="glass-card max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+        className="bg-black/90 backdrop-blur-sm border border-gray-900/50 rounded-xl p-6 shadow-2xl shadow-black/50 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Info className="w-6 h-6 text-blue-400" />
+            <div className="p-2 bg-red-900/30 border border-red-800/50 rounded-lg">
+              <Skull className="w-6 h-6 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white">How It Works</h2>
+            <h2 className="text-2xl font-bold text-gray-200 tracking-wide">PENDING TRANSACTION RESOLVER</h2>
           </div>
           <button
             onClick={onClose}
-            className="glass-button p-2"
+            className="bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-gray-300 hover:text-gray-200 p-2 rounded-lg transition-all duration-200 hover:border-gray-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -39,99 +39,91 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ onClose }) => {
 
         <div className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-3 flex items-center space-x-2">
-              <Zap className="w-5 h-5 text-yellow-400" />
-              <span>What is this tool?</span>
+            <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center space-x-2 tracking-wide">
+              <Zap className="w-5 h-5 text-red-500" />
+              <span>What does this tool do?</span>
             </h3>
-            <p className="text-white/80 leading-relaxed">
-              This is a specialized tool designed to help you remove stuck or pending transactions from the Ethereum blockchain. 
-              When a transaction gets stuck due to low gas prices or network congestion, this tool allows you to send a new 
-              transaction with the same nonce but higher gas price, effectively replacing the pending transaction.
+            <p className="text-gray-400 leading-relaxed">
+              This tool sends zero value transactions to yourself to resolve pending transactions visible on the blockchain or cancel transactions stuck in the mempool. 
+              It does NOT add additional value to contract calls to speed them up.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-white mb-3 flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-green-400" />
+            <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center space-x-2 tracking-wide">
+              <Shield className="w-5 h-5 text-red-500" />
               <span>How does it work?</span>
             </h3>
-            <div className="space-y-3 text-white/80">
+            <div className="space-y-3 text-gray-400">
               <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-sm font-bold text-blue-300 mt-0.5">
+                <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
                   1
                 </div>
-                <p>Connect your MetaMask wallet to access your account</p>
+                <p>Connect your MetaMask wallet</p>
               </div>
               <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-sm font-bold text-blue-300 mt-0.5">
+                <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
                   2
                 </div>
-                <p>Configure your RPC URL (use a reliable provider like Alchemy or Infura)</p>
+                <p>Set the nonce of your pending/stuck transaction</p>
               </div>
               <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-sm font-bold text-blue-300 mt-0.5">
+                <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
                   3
                 </div>
-                <p>Set the nonce to match your pending transaction (use the "Get" button to fetch current nonce)</p>
+                <p>Send a zero value transaction to yourself with the same nonce</p>
               </div>
               <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-sm font-bold text-blue-300 mt-0.5">
+                <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
                   4
                 </div>
-                <p>Set a higher gas price than your pending transaction to ensure it gets processed first</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-sm font-bold text-blue-300 mt-0.5">
-                  5
-                </div>
-                <p>Send a small amount of ETH to yourself - this transaction will replace the pending one</p>
+                <p>The pending or stuck transaction is resolved/canceled</p>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-white mb-3 flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-orange-400" />
+            <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center space-x-2 tracking-wide">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
               <span>Why does this work?</span>
             </h3>
-            <p className="text-white/80 leading-relaxed mb-3">
-              Ethereum uses a nonce system to ensure transaction ordering. Each account has a nonce that must increase 
-              sequentially. When you send a new transaction with the same nonce as a pending transaction but with a 
-              higher gas price, miners will prioritize the higher-paying transaction, effectively canceling the pending one.
-            </p>
-            <p className="text-white/80 leading-relaxed">
-              This is a standard and safe method used throughout the Ethereum ecosystem to handle stuck transactions.
+            <p className="text-gray-400 leading-relaxed">
+              Ethereum uses a nonce system where each account has a sequential transaction counter. 
+              When you send a new transaction with the same nonce as a pending or stuck transaction, it replaces the original one. 
+              Since this tool sends zero value transactions to yourself, no ETH is transferred - only gas fees are paid.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-white mb-3 flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-green-400" />
-              <span>Safety & Best Practices</span>
+            <h3 className="text-xl font-semibold text-gray-200 mb-3 flex items-center space-x-2 tracking-wide">
+              <Eye className="w-5 h-5 text-red-500" />
+              <span>Important Notes</span>
             </h3>
-            <ul className="text-white/80 space-y-2">
-              <li>• Always verify the nonce matches your pending transaction</li>
-              <li>• Use a gas price at least 20% higher than your pending transaction</li>
-              <li>• Start with a small amount (0.001 ETH) to test the process</li>
-              <li>• Use a reliable RPC provider to avoid connection issues</li>
-              <li>• Double-check all transaction details before sending</li>
+            <ul className="text-gray-400 space-y-2">
+              <li>• This tool ONLY sends zero value transactions to yourself</li>
+              <li>• It resolves pending transactions visible on the blockchain</li>
+              <li>• It cancels transactions stuck in the mempool</li>
+              <li>• It does NOT add additional value to contract calls to speed them up</li>
+              <li>• It does NOT handle transactions stuck due to insufficient gas</li>
+              <li>• Always verify the nonce matches your pending/stuck transaction</li>
+              <li>• You will only pay gas fees, no ETH is transferred</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-white mb-3">Common RPC URLs</h3>
+            <h3 className="text-xl font-semibold text-gray-200 mb-3 tracking-wide">RPC Endpoints</h3>
             <div className="space-y-2 text-sm">
-              <div className="glass p-3">
-                <p className="text-blue-300 font-medium">Alchemy (Recommended)</p>
-                <p className="text-white/60">https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY</p>
+              <div className="bg-gray-900/60 border border-gray-800/50 p-3 rounded-lg">
+                <p className="text-red-400 font-medium">Alchemy (Recommended)</p>
+                <p className="text-gray-500">https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY</p>
               </div>
-              <div className="glass p-3">
-                <p className="text-blue-300 font-medium">Infura</p>
-                <p className="text-white/60">https://mainnet.infura.io/v3/YOUR_PROJECT_ID</p>
+              <div className="bg-gray-900/60 border border-gray-800/50 p-3 rounded-lg">
+                <p className="text-red-400 font-medium">Infura</p>
+                <p className="text-gray-500">https://mainnet.infura.io/v3/YOUR_PROJECT_ID</p>
               </div>
-              <div className="glass p-3">
-                <p className="text-blue-300 font-medium">Public RPC (Less Reliable)</p>
-                <p className="text-white/60">https://eth.llamarpc.com</p>
+              <div className="bg-gray-900/60 border border-gray-800/50 p-3 rounded-lg">
+                <p className="text-red-400 font-medium">Public RPC (Less Reliable)</p>
+                <p className="text-gray-500">https://eth.llamarpc.com</p>
               </div>
             </div>
           </div>

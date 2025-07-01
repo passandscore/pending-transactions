@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Settings, Zap, Send, AlertCircle, CheckCircle, ExternalLink, Clock, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Settings, Zap, Send, AlertCircle, CheckCircle, ExternalLink, Clock, Info, Eye, Skull, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { ethers } from 'ethers';
 
 interface TransactionFormProps {
@@ -38,6 +38,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
   const [isFetchingPendingTx, setIsFetchingPendingTx] = useState(false);
   const [hasManualNonce, setHasManualNonce] = useState(false);
   const [walletNonce, setWalletNonce] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,6 +52,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
     if (name === 'nonce' && value.trim() !== '') {
       setHasManualNonce(true);
     }
+  };
+
+  const toggleAccordion = (section: string) => {
+    setOpenAccordion(openAccordion === section ? null : section);
   };
 
   // Fetch pending transaction details
@@ -305,13 +311,22 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="glass-card"
+      className="bg-black/90 backdrop-blur-sm border border-gray-900/50 rounded-xl p-6 shadow-2xl shadow-black/50"
     >
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-blue-500/20 rounded-lg">
-          <Settings className="w-6 h-6 text-blue-400" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-red-900/30 border border-red-800/50 rounded-lg">
+            <Skull className="w-5 h-5 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-100 tracking-wider">PENDING TRANSACTION RESOLVER</h2>
         </div>
-        <h2 className="text-2xl font-bold text-white">Transaction Settings</h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-gray-300 hover:text-gray-200 px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 hover:border-gray-600 text-sm"
+        >
+          <Info className="w-4 h-4" />
+          <span>What is this?</span>
+        </button>
       </div>
 
       {/* Nonce Warning */}
@@ -319,15 +334,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+          className="mb-6 p-4 bg-amber-900/20 border border-amber-800/30 rounded-lg"
         >
           <div className="flex items-center space-x-2 mb-2">
-            <Info className="w-5 h-5 text-yellow-400" />
-            <h3 className="text-yellow-300 font-medium">Nonce Mismatch Notice</h3>
+            <Eye className="w-5 h-5 text-amber-500" />
+            <h3 className="text-amber-400 font-medium tracking-wide">NONCE DISCREPANCY DETECTED</h3>
           </div>
-          <p className="text-yellow-200/80 text-sm">
-            Your wallet UI may show nonce {walletNonce}, but this transaction will execute with nonce {formData.nonce}. 
-            This is normal when replacing pending transactions - the transaction will use the nonce you specify here.
+          <p className="text-gray-400 text-sm">
+            Wallet displays nonce {walletNonce}, but execution will use nonce {formData.nonce}. 
+            <span className="text-amber-300"> Proceed with caution.</span>
           </p>
         </motion.div>
       )}
@@ -337,32 +352,32 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg"
+          className="mb-6 p-4 bg-red-900/20 border border-red-800/30 rounded-lg"
         >
           <div className="flex items-center space-x-2 mb-3">
-            <Clock className="w-5 h-5 text-orange-400" />
-            <h3 className="text-orange-300 font-medium">Pending Transaction Found</h3>
+            <Clock className="w-5 h-5 text-red-500" />
+            <h3 className="text-red-400 font-medium tracking-wide">PENDING TRANSACTION FOUND</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <p className="text-white/60">Hash</p>
-              <p className="text-white font-mono text-xs truncate">{pendingTx.hash}</p>
+              <p className="text-gray-500">Hash</p>
+              <p className="text-gray-300 font-mono text-xs truncate">{pendingTx.hash}</p>
             </div>
             <div>
-              <p className="text-white/60">Gas Price</p>
-              <p className="text-white font-medium">{pendingTx.gasPrice} Gwei</p>
+              <p className="text-gray-500">Gas Price</p>
+              <p className="text-gray-300 font-medium">{pendingTx.gasPrice} Gwei</p>
             </div>
             <div>
-              <p className="text-white/60">Gas Limit</p>
-              <p className="text-white font-medium">{pendingTx.gasLimit}</p>
+              <p className="text-gray-500">Gas Limit</p>
+              <p className="text-gray-300 font-medium">{pendingTx.gasLimit}</p>
             </div>
             <div>
-              <p className="text-white/60">Value</p>
-              <p className="text-white font-medium">{pendingTx.value} ETH</p>
+              <p className="text-gray-500">Value</p>
+              <p className="text-gray-300 font-medium">{pendingTx.value} ETH</p>
             </div>
           </div>
-          <div className="mt-3 p-2 bg-orange-500/20 rounded text-xs text-orange-200">
-            💡 Set your gas price higher than {pendingTx.gasPrice} Gwei to replace this transaction
+          <div className="mt-3 p-2 bg-red-900/30 rounded text-xs text-red-300 border border-red-800/50">
+            ⚠️ SET GAS PRICE HIGHER THAN {pendingTx.gasPrice} GWEI TO REPLACE THIS TRANSACTION
           </div>
         </motion.div>
       )}
@@ -370,8 +385,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* RPC URL */}
         <div className="md:col-span-2">
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            RPC URL *
+          <label className="block text-gray-400 text-sm font-medium mb-2 tracking-wide">
+            RPC ENDPOINT *
           </label>
           <div className="flex space-x-2">
             <input
@@ -380,21 +395,21 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
               value={formData.rpcUrl}
               onChange={handleInputChange}
               placeholder="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
-              className="glass-input flex-1"
+              className="bg-gray-900/80 border border-gray-800 text-gray-200 placeholder-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-200 flex-1"
             />
             <button
               onClick={openChainlist}
-              className="glass-button px-4 flex items-center space-x-2"
+              className="bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-gray-300 hover:text-gray-200 px-4 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 hover:border-gray-600"
             >
               <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">Find RPC</span>
+              <span className="hidden sm:inline">FIND RPC</span>
             </button>
           </div>
-          <p className="text-white/60 text-xs mt-1">
-            Auto-fetching nonce, gas price, and pending transaction details...
+          <p className="text-gray-600 text-xs mt-1">
+            Scanning for nonce, gas price, and pending transactions...
             {formData.rpcUrl && formData.rpcUrl !== 'https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY' && (
-              <span className="block mt-1 text-orange-300">
-                ⚠️ Pending transaction detection may not work with all RPC providers. Set gas price manually if needed.
+              <span className="block mt-1 text-red-400">
+                ⚠️ Pending transaction detection may fail with certain RPC providers. Manual gas price setting recommended.
               </span>
             )}
           </p>
@@ -402,8 +417,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
 
         {/* Nonce */}
         <div>
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            Nonce *
+          <label className="block text-gray-400 text-sm font-medium mb-2 tracking-wide">
+            NONCE *
           </label>
           <div className="flex space-x-2">
             <input
@@ -412,30 +427,30 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
               value={formData.nonce}
               onChange={handleInputChange}
               placeholder="0"
-              className="glass-input flex-1"
+              className="bg-gray-900/80 border border-gray-800 text-gray-200 placeholder-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-200 flex-1"
             />
             <button
               onClick={getCurrentNonce}
               disabled={isFetchingNonce || isFetchingPendingTx}
-              className="glass-button px-4 disabled:opacity-50"
+              className="bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-gray-300 hover:text-gray-200 px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:border-gray-600"
             >
               {isFetchingNonce || isFetchingPendingTx ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-gray-600 border-t-red-500 rounded-full animate-spin"></div>
               ) : (
-                'Get'
+                'CURRENT NONCE'
               )}
             </button>
           </div>
-          <p className="text-white/60 text-xs mt-1">
-            {walletNonce !== null && `Wallet shows: ${walletNonce} • `}
-            {pendingTx ? 'Pending TX found!' : 'No pending TX found'}
+          <p className="text-gray-600 text-xs mt-1">
+            {walletNonce !== null && `Wallet nonce: ${walletNonce} • `}
+            {pendingTx ? 'Pending transaction found!' : 'No pending transactions found'}
           </p>
         </div>
 
         {/* Gas Price */}
         <div>
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            Gas Price (Gwei) *
+          <label className="block text-gray-400 text-sm font-medium mb-2 tracking-wide">
+            GAS PRICE (GWEI) *
           </label>
           <input
             type="number"
@@ -443,20 +458,20 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
             value={formData.gasPrice}
             onChange={handleInputChange}
             placeholder="50"
-            className="glass-input w-full"
+            className="bg-gray-900/80 border border-gray-800 text-gray-200 placeholder-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-200 w-full"
           />
-          <p className="text-white/60 text-xs mt-1">
+          <p className="text-gray-600 text-xs mt-1">
             {pendingTx 
-              ? `Pending TX: ${pendingTx.gasPrice} Gwei • Set higher than this`
-              : `Current network gas: ${gasDetails.currentGasPrice ? `${gasDetails.currentGasPrice} Gwei` : 'Loading...'} • Set 20% higher than current gas price to replace pending TX`
+              ? `Pending tx gas: ${pendingTx.gasPrice} Gwei • Exceed to resolve`
+              : `Network gas: ${gasDetails.currentGasPrice ? `${gasDetails.currentGasPrice} Gwei` : 'Scanning...'} • Set 20% higher to resolve pending transactions`
             }
           </p>
         </div>
 
         {/* Gas Limit */}
         <div>
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            Gas Limit *
+          <label className="block text-gray-400 text-sm font-medium mb-2 tracking-wide">
+            GAS LIMIT *
           </label>
           <input
             type="number"
@@ -464,20 +479,20 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
             value={formData.gasLimit}
             onChange={handleInputChange}
             placeholder="21000"
-            className="glass-input w-full"
+            className="bg-gray-900/80 border border-gray-800 text-gray-200 placeholder-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-200 w-full"
           />
-          <p className="text-white/60 text-xs mt-1">
+          <p className="text-gray-600 text-xs mt-1">
             {pendingTx 
-              ? `Pending TX: ${pendingTx.gasLimit} gas • Use same or higher`
-              : `Standard ETH transfer: 21,000 gas • Estimated: ${gasDetails.estimatedGas} gas`
+              ? `Pending tx limit: ${pendingTx.gasLimit} gas • Match or exceed`
+              : `Standard transfer: 21,000 gas • Estimated: ${gasDetails.estimatedGas} gas`
             }
           </p>
         </div>
 
         {/* Value */}
         <div>
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            Value
+          <label className="block text-gray-400 text-sm font-medium mb-2 tracking-wide">
+            VALUE
           </label>
           <input
             type="number"
@@ -487,46 +502,46 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
             placeholder="0"
             step="0"
             disabled={true}
-            className="glass-input w-full disabled:opacity-50"
+            className="bg-gray-900/80 border border-gray-800 text-gray-200 placeholder-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-200 w-full disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <p className="text-white/60 text-xs mt-1">
-              No value needed for this transaction
+          <p className="text-gray-600 text-xs mt-1">
+              No value required.
           </p>
         </div>
       </div>
 
       {/* Gas Summary */}
-      <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-        <h3 className="text-blue-300 font-medium mb-2">Transaction Summary</h3>
+      {/* <div className="mt-6 p-4 bg-gray-900/60 border border-gray-800/50 rounded-lg">
+        <h3 className="text-gray-300 font-medium mb-2 tracking-wide">TRANSACTION REPLACEMENT SUMMARY</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <p className="text-white/60">Gas Price</p>
-            <p className="text-white font-medium">{formData.gasPrice} Gwei</p>
+            <p className="text-gray-500">Gas Price</p>
+            <p className="text-gray-300 font-medium">{formData.gasPrice} Gwei</p>
           </div>
           <div>
-            <p className="text-white/60">Gas Limit</p>
-            <p className="text-white font-medium">{formData.gasLimit}</p>
+            <p className="text-gray-500">Gas Limit</p>
+            <p className="text-gray-300 font-medium">{formData.gasLimit}</p>
           </div>
           <div>
-            <p className="text-white/60">Value</p>
-            <p className="text-white font-medium">{formData.value} ETH</p>
+            <p className="text-gray-500">Value</p>
+            <p className="text-gray-300 font-medium">{formData.value} ETH</p>
           </div>
           <div>
-            <p className="text-white/60">Total Cost</p>
-            <p className="text-white font-medium">{gasDetails.totalCost} ETH</p>
+            <p className="text-gray-500">Total Cost</p>
+            <p className="text-gray-300 font-medium">{gasDetails.totalCost} ETH</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Error/Success Messages */}
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center space-x-2 bg-red-500/20 border border-red-500/30 rounded-lg p-3 mt-6"
+          className="flex items-center space-x-2 bg-red-900/20 border border-red-800/30 rounded-lg p-3 mt-6"
         >
-          <AlertCircle className="w-5 h-5 text-red-400" />
-          <span className="text-red-300 text-sm">{error}</span>
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <span className="text-red-400 text-sm">{error}</span>
         </motion.div>
       )}
 
@@ -534,10 +549,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center space-x-2 bg-green-500/20 border border-green-500/30 rounded-lg p-3 mt-6"
+          className="flex items-center space-x-2 bg-green-900/20 border border-green-800/30 rounded-lg p-3 mt-6"
         >
-          <CheckCircle className="w-5 h-5 text-green-400" />
-          <span className="text-green-300 text-sm">{success.split('\n').map((line, index) => (
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          <span className="text-green-400 text-sm">{success.split('\n').map((line, index) => (
             <span key={index}>{line}<br /></span>
           ))}</span>
         </motion.div>
@@ -547,33 +562,212 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
       <motion.button
         onClick={sendTransaction}
         disabled={isLoading}
-        className="glass-button w-full mt-6 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-gradient-to-r from-red-900/80 to-red-800/80 hover:from-red-800/90 hover:to-red-700/90 border border-red-700/50 text-gray-200 hover:text-white w-full mt-6 py-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium tracking-wide shadow-lg shadow-red-900/20"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
         {isLoading ? (
           <>
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span>Sending Transaction...</span>
+            <div className="w-5 h-5 border-2 border-gray-600 border-t-red-500 rounded-full animate-spin"></div>
+            <span>RESOLVING PENDING TRANSACTION...</span>
           </>
         ) : (
           <>
             <Zap className="w-5 h-5" />
-            <span>Send Transaction to Remove Pending TX</span>
+            <span>RESOLVE PENDING TRANSACTION</span>
           </>
         )}
       </motion.button>
 
       {/* Info */}
-      <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-        <h3 className="text-blue-300 font-medium mb-2">How it works:</h3>
-        <ul className="text-blue-200/80 text-sm space-y-1">
-          <li>• Set a higher gas price than your pending transaction</li>
-          <li>• Use the same nonce as your pending transaction</li>
-          <li>• Send a small amount of ETH to yourself</li>
-          <li>• This will replace the pending transaction</li>
+      <div className="mt-6 p-4 bg-gray-900/60 border border-gray-800/50 rounded-lg">
+        <h3 className="text-gray-300 font-medium mb-2 tracking-wide">PENDING TRANSACTION RESOLUTION PROTOCOL:</h3>
+        <ul className="text-gray-400 text-sm space-y-1">
+          <li>• Exceed the pending transaction's gas price to resolve it</li>
+          <li>• Use the same nonce as the pending transaction</li>
+          <li>• Send minimal ETH to yourself</li>
+          <li>• The pending transaction will be resolved</li>
         </ul>
       </div>
+
+      {/* What is this Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900/95 border border-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-100">Transaction Replacement Tool</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* What */}
+                <div className="border border-gray-800 rounded-lg">
+                  <button
+                    onClick={() => toggleAccordion('what')}
+                    className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+                  >
+                    <h3 className="text-gray-200 font-medium">What is this tool?</h3>
+                    {openAccordion === 'what' ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  {openAccordion === 'what' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-4 pb-4"
+                    >
+                      <p className="text-gray-400 text-sm leading-relaxed">
+                        This tool allows you to resolve pending Ethereum transactions that are stuck in the mempool. 
+                        When you send a transaction with the same nonce but a higher gas price, it can resolve the 
+                        original transaction before it gets validated. This is useful for canceling unwanted transactions 
+                        or speeding up slow ones.
+                      </p>
+                      <p className="text-gray-400 text-sm leading-relaxed mt-2">
+                        <strong>💡 Pro Tip:</strong> Some transactions simply hang as pending due to network issues, 
+                        wallet problems, or other technical glitches. For these cases, sending a <strong>zero-value 
+                        transaction to yourself</strong> can often resolve the issue and clear the pending state.
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Why */}
+                <div className="border border-gray-800 rounded-lg">
+                  <button
+                    onClick={() => toggleAccordion('why')}
+                    className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+                  >
+                    <h3 className="text-gray-200 font-medium">Why would I need this?</h3>
+                    {openAccordion === 'why' ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  {openAccordion === 'why' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-4 pb-4"
+                    >
+                      <div className="text-gray-400 text-sm space-y-2">
+                        <p>You might need this tool when:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-4">
+                          <li>You sent a transaction with too low gas price and it's stuck</li>
+                          <li>You want to cancel a transaction you no longer want</li>
+                          <li>You made an error in a transaction and want to replace it</li>
+                          <li>You need to fix a pending/hanging transaction</li>
+                          <li>You have a transaction that simply hangs as pending (network/wallet issues)</li>
+                        </ul>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* When */}
+                <div className="border border-gray-800 rounded-lg">
+                  <button
+                    onClick={() => toggleAccordion('when')}
+                    className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+                  >
+                    <h3 className="text-gray-200 font-medium">When does this work?</h3>
+                    {openAccordion === 'when' ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  {openAccordion === 'when' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-4 pb-4"
+                    >
+                      <div className="text-gray-400 text-sm space-y-2">
+                        <p>Transaction resolution works when:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-4">
+                          <li>The original transaction is still pending (not validated)</li>
+                          <li>You use the same nonce as the original transaction</li>
+                          <li>You set a higher gas price than the original</li>
+                          <li>The network isn't too congested</li>
+                        </ul>
+                        <p className="mt-2 text-amber-400">
+                          ⚠️ Once a transaction is validated, it cannot be replaced or canceled.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* How */}
+                <div className="border border-gray-800 rounded-lg">
+                  <button
+                    onClick={() => toggleAccordion('how')}
+                    className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+                  >
+                    <h3 className="text-gray-200 font-medium">How does it work?</h3>
+                    {openAccordion === 'how' ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  {openAccordion === 'how' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-4 pb-4"
+                    >
+                      <div className="text-gray-400 text-sm space-y-2">
+                        <ol className="list-decimal list-inside space-y-1 ml-4">
+                          <li>Enter your RPC endpoint to connect to the blockchain</li>
+                          <li>Set the nonce to match your pending transaction</li>
+                          <li>Set a gas price higher than the pending transaction</li>
+                          <li>Set an appropriate gas limit (usually 21,000 for simple transfers)</li>
+                          <li>Send a small amount of ETH to yourself (0 ETH is fine for hanging transactions)</li>
+                          <li>Submit the transaction through MetaMask</li>
+                        </ol>
+                        <p className="mt-2">
+                          The new transaction will replace the old one because it has the same nonce but higher gas price.
+                        </p>
+                        <p className="mt-2 text-amber-400">
+                          <strong>Note:</strong> For transactions that simply hang as pending, you can use 0 ETH value 
+                          to "unstick" them by advancing the nonce.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
