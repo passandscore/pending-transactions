@@ -119,27 +119,29 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
     }
   };
 
-  // Get nonce from MetaMask or RPC
+  // Get nonce from wallet or RPC
   const getNonce = async (): Promise<number> => {
-    if (window.ethereum) {
+    // Try to use the selected wallet provider, fallback to window.ethereum
+    const walletProvider = (window as any).selectedWalletProvider || window.ethereum;
+    if (walletProvider) {
       try {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        await walletProvider.request({ method: 'eth_requestAccounts' });
+        const accounts = await walletProvider.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
-          const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await metamaskProvider.getSigner();
+          const ethersProvider = new ethers.BrowserProvider(walletProvider);
+          const signer = await ethersProvider.getSigner();
           const nonce = await signer.getNonce();
           setWalletNonce(nonce);
           return nonce;
         }
-      } catch (metamaskError) {
-        console.log('MetaMask not available, using RPC nonce:', metamaskError);
+      } catch (walletError) {
+        console.log('Wallet not available, using RPC nonce:', walletError);
       }
     }
     
     // Fallback to RPC provider
-    const provider = new ethers.JsonRpcProvider(formData.rpcUrl);
-    const nonce = await provider.getTransactionCount(walletAddress, 'pending');
+    const rpcProvider = new ethers.JsonRpcProvider(formData.rpcUrl);
+    const nonce = await rpcProvider.getTransactionCount(walletAddress, 'pending');
     setWalletNonce(nonce);
     return nonce;
   };
@@ -225,32 +227,35 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
         throw new Error('Please fill in all required fields');
       }
 
-      // Check if MetaMask is available
-      if (!window.ethereum) {
-        throw new Error('MetaMask is not installed. Please install MetaMask and try again.');
+      // Get the selected wallet provider or fallback to window.ethereum
+      const walletProvider = (window as any).selectedWalletProvider || window.ethereum;
+      
+      // Check if wallet is available
+      if (!walletProvider) {
+        throw new Error('No Ethereum wallet found. Please connect your wallet and try again.');
       }
 
       // Request account access
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await walletProvider.request({ method: 'eth_requestAccounts' });
       if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts found. Please connect MetaMask and try again.');
+        throw new Error('No accounts found. Please connect your wallet and try again.');
       }
 
-      // Use the first connected account from MetaMask
+      // Use the first connected account from wallet
       const fromAddress = accounts[0];
-      console.log('Using address from MetaMask:', fromAddress);
+      console.log('Using address from wallet:', fromAddress);
 
       // Validate the address
       if (!ethers.isAddress(fromAddress)) {
-        throw new Error('Invalid Ethereum address from MetaMask');
+        throw new Error('Invalid Ethereum address from wallet');
       }
 
-      // Use ethers.js with MetaMask provider
-      const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await metamaskProvider.getSigner();
+      // Use ethers.js with wallet provider
+      const ethersProvider = new ethers.BrowserProvider(walletProvider);
+      const signer = await ethersProvider.getSigner();
       
       // Get network info for block explorer URL
-      const network = await metamaskProvider.getNetwork();
+      const network = await ethersProvider.getNetwork();
       const blockExplorerUrl = (network as any).getBlockExplorerUrl?.() || null;
       
       // Create transaction object
@@ -750,7 +755,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ walletAddress }) => {
                           <li>Set a gas price higher than the pending transaction</li>
                           <li>Set an appropriate gas limit (usually 21,000 for simple transfers)</li>
                           <li>Send a small amount of ETH to yourself (0 ETH is fine for hanging transactions)</li>
-                          <li>Submit the transaction through MetaMask</li>
+                          <li>Submit the transaction through your wallet</li>
                         </ol>
                         <p className="mt-2">
                           The new transaction will replace the old one because it has the same nonce but higher gas price.

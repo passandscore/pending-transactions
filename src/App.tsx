@@ -42,9 +42,11 @@ function App() {
               transition={{ duration: 0.6 }}
             >
               <WalletConnector 
-                onConnect={(address) => {
+                onConnect={(address, provider) => {
                   setIsConnected(true);
                   setWalletAddress(address);
+                  // Store provider globally for TransactionForm
+                  (window as any).selectedWalletProvider = provider;
                 }}
               />
             </motion.div>

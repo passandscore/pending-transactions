@@ -59,7 +59,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ onClose }) => {
                 <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
                   1
                 </div>
-                <p>Connect your MetaMask wallet</p>
+                <p>Select and connect your wallet</p>
               </div>
               <div className="flex items-start space-x-3">
                 <div className="w-6 h-6 bg-red-900/30 border border-red-800/50 rounded-full flex items-center justify-center text-sm font-bold text-red-400 mt-0.5">
